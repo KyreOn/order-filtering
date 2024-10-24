@@ -7,44 +7,103 @@ namespace order_filtering;
 
 class Program
 {
-    private static string _cityDistrict;
-    private static DateTime _firstDeliveryDateTime = DateTime.Now;
-    private static FileStream _deliveryLog;
-    private static FileStream _deliveryOrder;
+    static string _cityDistrict;
+    static DateTime _firstDeliveryDateTime;
+    static FileStream _deliveryLog;
+    static FileStream _deliveryOrder;
     
     static void Main(string[] args)
     {
+        Setup();
+        Log("Пути к файлам логов и результатов найдены.");
         if (args.Length == 0)
         {
+            Log("Получение параметров фильтрации...");
             Console.WriteLine("Введите район доставки:");
             InputDistrict();
-            Console.WriteLine("Введите дату первой доставки:");
+            Console.WriteLine("Введите дату первой доставки в формате \"yyyy-MM-dd HH:mm:ss\":");
             InputDate();
-            Console.WriteLine("Введите путь к файлу логов:");
-            InputLogPath();
-            Console.WriteLine("Введите путь к файлу с результатами фильтрации:");
-            InputOrderPath();
         }
         else
             SetFieldsFromArgs(args);
+        Log($"Район доставки: {_cityDistrict}, Дата первой доставки: {_firstDeliveryDateTime}.");
+        Log("Фильтрация данных...");
         var queryResult = Query();
+        Log($"Найдено {queryResult.Count()} подходящих записей.");
+        Log("Сохранение записей...");
         PrintResult(queryResult);
+        Log("Программа завершена успешно.");
         _deliveryOrder.Close();
         _deliveryLog.Close();
     }
+    
+    #region Setup
 
-    #region DataInput
+    static void Setup()
+    {
+        using var settings = File.Open("settings.json", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        var jsonSettings = JsonNode.Parse(settings);
+        SetPath(jsonSettings,"deliveryLog", out _deliveryLog);
+        SetPath(jsonSettings,"deliveryOrder", out _deliveryOrder);
+    }
+
+    static void SetPath(JsonNode settings, string fileName, out FileStream file)
+    {
+        if (ValidatePath(settings[fileName].ToString(), out file)) return;
+        Console.WriteLine($"Путь к файлу {fileName} в файле конфигурации settings.json указан неверно. Хотите установить путь вручную (Y/n)?");
+        ManualPathSetup(out file);
+    }
+
+    static void ManualPathSetup(out FileStream file)
+    {
+        while (true)
+        {
+            var manualSetup = Console.ReadLine();
+            switch (manualSetup.ToLower())
+            {
+                case "y":
+                {
+                    InputPath(out file);
+                    break;
+                }
+                case "n":
+                {
+                    file = null;
+                    Environment.Exit(1);
+                    break;
+                }
+                default:
+                {
+                    Console.WriteLine("Введено неверное значение. Введите одно из доступных значений (Y/n):");
+                    continue;
+                }
+            }
+
+            break;
+        }
+    }
+    
+    static void InputPath(out FileStream file)
+    {
+        while (true)
+        {
+            var path = Console.ReadLine();
+            if (ValidatePath(path, out file))
+                break;
+            Console.WriteLine("Путь к файлу введен неверно, проверьте правильность введеных данных и повторите попытку:");
+        }
+    }
 
     static void SetFieldsFromArgs(string[] args)
     {
-        if (!ValidateDistrict(args[0], out _cityDistrict) || !ValidateDate(args[1], out _firstDeliveryDateTime) ||
-            !ValidatePath(args[2], out _deliveryLog) || !ValidatePath(args[3], out _deliveryOrder))
+        Log("Программа запущена с параметрами. Проверка...");
+        if (!ValidateDistrict(args[0], out _cityDistrict) || !ValidateDate(args[1], out _firstDeliveryDateTime))
         {
             Console.WriteLine("Неверные параметры. Проверьте правильность введенных данных, либо запустите программу без параметров");
             Environment.Exit(1);
+            Log("Один или несколько параметров введены неверно.");
+            Log("Программа завершена неудачно.");
         }
-            
-        _cityDistrict = args[0];
     }
 
     static void InputDistrict()
@@ -68,29 +127,7 @@ class Program
             Console.WriteLine("Дата доставки введена неверно, проверьте правильность введеных данных и повторите попытку:");
         }
     }
-
-    static void InputLogPath()
-    {
-        while (true)
-        {
-            var logPath = Console.ReadLine();
-            if (ValidatePath(logPath, out _deliveryLog))
-                break;
-            Console.WriteLine("Путь к файлу введен неверно, проверьте правильность введеных данных и повторите попытку:");
-        }
-    }
-
-    static void InputOrderPath()
-    {
-        while (true)
-        {
-            var orderPath = Console.ReadLine();
-            if (ValidatePath(orderPath, out _deliveryOrder))
-                break;
-            Console.WriteLine("Путь к файлу введен неверно, проверьте правильность введеных данных и повторите попытку:");
-        }
-    }
-
+    
     #endregion
     
     #region Validation
@@ -126,15 +163,14 @@ class Program
     {
         var json = JsonNode.Parse(File.ReadAllText("test-data.json"));
         var result = json.AsArray()
-            .Where(x => CheckEntry(x["district"].ToString(), x["deliveryDateTime"].ToString()))
-            .Select(x => x);
+            .Where(x => CheckEntry(x["district"].ToString(), x["deliveryDateTime"].ToString()));
         return result;
     }
 
     static bool CheckEntry(string district, string data)
     {
         var diff = DateTime.ParseExact(data, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) - _firstDeliveryDateTime;
-        return diff.TotalSeconds is > 0 and <= 18000 && district == _cityDistrict;
+        return diff.TotalSeconds is > 0 and <= 1800 && district == _cityDistrict;
     }
 
     static void PrintResult(IEnumerable<JsonNode> result)
@@ -148,4 +184,9 @@ class Program
     }
     
     #endregion
+
+    static void Log(string message)
+    {
+        _deliveryLog.Write(Encoding.UTF8.GetBytes(message + "\n"));
+    }
 }
