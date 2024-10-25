@@ -5,12 +5,12 @@ using System.Text.Json.Nodes;
 
 namespace order_filtering;
 
-class Program
+public class OrderFilter
 {
-    static string _cityDistrict;
-    static DateTime _firstDeliveryDateTime;
-    static FileStream _deliveryLog;
-    static FileStream _deliveryOrder;
+    public static string _cityDistrict;
+    public static DateTime _firstDeliveryDateTime;
+    private static FileStream _deliveryLog;
+    private static FileStream _deliveryOrder;
     
     static void Main(string[] args)
     {
@@ -39,7 +39,7 @@ class Program
     
     #region Setup
 
-    static void Setup()
+    private static void Setup()
     {
         using var settings = File.Open("settings.json", FileMode.OpenOrCreate, FileAccess.ReadWrite);
         var jsonSettings = JsonNode.Parse(settings);
@@ -47,14 +47,14 @@ class Program
         SetPath(jsonSettings,"deliveryOrder", out _deliveryOrder);
     }
 
-    static void SetPath(JsonNode settings, string fileName, out FileStream file)
+    private static void SetPath(JsonNode settings, string fileName, out FileStream file)
     {
         if (ValidatePath(settings[fileName].ToString(), out file)) return;
         Console.WriteLine($"Путь к файлу {fileName} в файле конфигурации settings.json указан неверно. Хотите установить путь вручную (Y/n)?");
         ManualPathSetup(out file);
     }
 
-    static void ManualPathSetup(out FileStream file)
+    private static void ManualPathSetup(out FileStream file)
     {
         while (true)
         {
@@ -82,8 +82,8 @@ class Program
             break;
         }
     }
-    
-    static void InputPath(out FileStream file)
+
+    private static void InputPath(out FileStream file)
     {
         while (true)
         {
@@ -94,7 +94,7 @@ class Program
         }
     }
 
-    static void SetFieldsFromArgs(string[] args)
+    private static void SetFieldsFromArgs(string[] args)
     {
         Log("Программа запущена с параметрами. Проверка...");
         if (!ValidateDistrict(args[0], out _cityDistrict) || !ValidateDate(args[1], out _firstDeliveryDateTime))
@@ -106,7 +106,7 @@ class Program
         }
     }
 
-    static void InputDistrict()
+    private static void InputDistrict()
     {
         while (true)
         {
@@ -117,7 +117,7 @@ class Program
         }
     }
 
-    static void InputDate()
+    private static void InputDate()
     {
         while (true)
         {
@@ -132,16 +132,16 @@ class Program
     
     #region Validation
 
-    static bool ValidateDistrict(string district, out string districtName)
+    public static bool ValidateDistrict(string district, out string districtName)
     {
         districtName = district;
         return !string.IsNullOrEmpty(district);
     }
 
-    static bool ValidateDate(string date, out DateTime dateTime) => 
+    public static bool ValidateDate(string date, out DateTime dateTime) => 
         DateTime.TryParseExact(date, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime);
 
-    static bool ValidatePath(string path, out FileStream file)
+    public static bool ValidatePath(string path, out FileStream file)
     {
         try
         {
@@ -158,8 +158,8 @@ class Program
     #endregion
 
     #region Query
-    
-    static IEnumerable<JsonNode> Query()
+
+    private static IEnumerable<JsonNode> Query()
     {
         var json = JsonNode.Parse(File.ReadAllText("test-data.json"));
         var result = json.AsArray()
@@ -167,13 +167,13 @@ class Program
         return result;
     }
 
-    static bool CheckEntry(string district, string data)
+    public static bool CheckEntry(string district, string date)
     {
-        var diff = DateTime.ParseExact(data, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) - _firstDeliveryDateTime;
+        var diff = DateTime.ParseExact(date, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) - _firstDeliveryDateTime;
         return diff.TotalSeconds is > 0 and <= 1800 && district == _cityDistrict;
     }
 
-    static void PrintResult(IEnumerable<JsonNode> result)
+    private static void PrintResult(IEnumerable<JsonNode> result)
     {
         foreach (var entry in result)
         {

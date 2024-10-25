@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "order-filtering", "order-filtering\order-filtering.csproj", "{DE52B7DA-629A-4843-8FC4-A6F888B1654B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "order-filtering-test", "order-filtering-test\order-filtering-test.csproj", "{D64BD9A6-EAA6-49FA-B16F-720F880F79FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{DE52B7DA-629A-4843-8FC4-A6F888B1654B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE52B7DA-629A-4843-8FC4-A6F888B1654B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE52B7DA-629A-4843-8FC4-A6F888B1654B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D64BD9A6-EAA6-49FA-B16F-720F880F79FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D64BD9A6-EAA6-49FA-B16F-720F880F79FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D64BD9A6-EAA6-49FA-B16F-720F880F79FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D64BD9A6-EAA6-49FA-B16F-720F880F79FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
