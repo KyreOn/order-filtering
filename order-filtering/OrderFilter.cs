@@ -38,7 +38,8 @@ public class OrderFilter
     }
     
     #region Setup
-
+    
+    //Получение файлов логов и результатов из конфигурационного файла
     private static void Setup()
     {
         using var settings = File.Open("settings.json", FileMode.OpenOrCreate, FileAccess.ReadWrite);
@@ -46,14 +47,15 @@ public class OrderFilter
         SetPath(jsonSettings,"deliveryLog", out _deliveryLog);
         SetPath(jsonSettings,"deliveryOrder", out _deliveryOrder);
     }
-
+    
     private static void SetPath(JsonNode settings, string fileName, out FileStream file)
     {
         if (ValidatePath(settings[fileName].ToString(), out file)) return;
         Console.WriteLine($"Путь к файлу {fileName} в файле конфигурации settings.json указан неверно. Хотите установить путь вручную (Y/n)?");
         ManualPathSetup(out file);
     }
-
+    
+    //Ручная установка путей к файлам логов и результатов
     private static void ManualPathSetup(out FileStream file)
     {
         while (true)
@@ -83,17 +85,7 @@ public class OrderFilter
         }
     }
 
-    private static void InputPath(out FileStream file)
-    {
-        while (true)
-        {
-            var path = Console.ReadLine();
-            if (ValidatePath(path, out file))
-                break;
-            Console.WriteLine("Путь к файлу введен неверно, проверьте правильность введеных данных и повторите попытку:");
-        }
-    }
-
+    //Установка параметров фильтрации через аргументы программы
     private static void SetFieldsFromArgs(string[] args)
     {
         Log("Программа запущена с параметрами. Проверка...");
@@ -105,7 +97,20 @@ public class OrderFilter
             Log("Программа завершена неудачно.");
         }
     }
-
+    
+    //Ввод пути к файлу из консоли
+    private static void InputPath(out FileStream file)
+    {
+        while (true)
+        {
+            var path = Console.ReadLine();
+            if (ValidatePath(path, out file))
+                break;
+            Console.WriteLine("Путь к файлу введен неверно, проверьте правильность введеных данных и повторите попытку:");
+        }
+    }
+    
+    //Ввод района доставки из консоли
     private static void InputDistrict()
     {
         while (true)
@@ -117,6 +122,7 @@ public class OrderFilter
         }
     }
 
+    //Ввод даты первой доставки из консоли
     private static void InputDate()
     {
         while (true)
@@ -131,16 +137,19 @@ public class OrderFilter
     #endregion
     
     #region Validation
-
+    
+    //Проверка введенного значения района доставки
     public static bool ValidateDistrict(string district, out string districtName)
     {
         districtName = district;
         return !string.IsNullOrEmpty(district);
     }
-
+    
+    //Проверка введенного значения даты первой доставки
     public static bool ValidateDate(string date, out DateTime dateTime) => 
         DateTime.TryParseExact(date, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime);
-
+    
+    //Проверка введенного значения пути к файлу
     public static bool ValidatePath(string path, out FileStream file)
     {
         try
@@ -158,7 +167,8 @@ public class OrderFilter
     #endregion
 
     #region Query
-
+    
+    //Запрос к файлу с данными
     private static IEnumerable<JsonNode> Query()
     {
         var json = JsonNode.Parse(File.ReadAllText("test-data.json"));
@@ -166,13 +176,15 @@ public class OrderFilter
             .Where(x => CheckEntry(x["district"].ToString(), x["deliveryDateTime"].ToString()));
         return result;
     }
-
+    
+    //Проверка записи на соответсвие условиям
     public static bool CheckEntry(string district, string date)
     {
         var diff = DateTime.ParseExact(date, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) - _firstDeliveryDateTime;
         return diff.TotalSeconds is > 0 and <= 1800 && district == _cityDistrict;
     }
-
+    
+    //Вывод отфильтрованных записей в файл
     private static void PrintResult(IEnumerable<JsonNode> result)
     {
         foreach (var entry in result)
@@ -184,7 +196,8 @@ public class OrderFilter
     }
     
     #endregion
-
+    
+    //Запись сообщения в файл логов
     static void Log(string message)
     {
         _deliveryLog.Write(Encoding.UTF8.GetBytes(message + "\n"));
